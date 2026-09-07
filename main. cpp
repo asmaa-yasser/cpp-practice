@@ -1,85 +1,12 @@
-#include <iostream>
+#include <windows.h>
 #include <string>
-using namespace std;
-void supermarketproducts(string products[50],int prices[50]) {
-cout << "Welcome to our supermarket!\n " << endl;
-    cout << "==== Supermarket Weshweshny ==== \n\n";
-    cout << "__________products_____________ \n\n";
-    for ( int i = 0 ; i < 50 ; i++ ) {
-        cout << i + 1 << ". " << products[i] << " - " << prices[i] << "EGP\t \t";
-        if ((i +1) % 3 == 0 ) {
-            cout << "\n";
-        }
-             }
-           cout << "\n__________________________________________________________________________________\n";
-    }
-int runcartsystem ( string products[50] , int prices[50]) {
-int grandprice = 0 ;
-char keep = 'y' ;
-while(keep == 'y' || keep == 'Y'){
- int choice ;
- int quantity ;
- cout << "\n Enter product number:\n";
- cin >> choice ;
- cout << "Enter quantity:";
- cin >> quantity ;
- int itemprice = prices [choice - 1] * quantity ;
- grandprice +=itemprice;
- cout<< " Your bought : \n";
- cout << " products : " << products [choice - 1]<<"\n";
- cout << "Quantity : " <<quantity << endl;
- cout << "price : " << prices [choice-1]<< "EGP" << endl;
- cout << "Total : "<< itemprice <<"EGP" << endl;
- cout << "\nCurrent Grand Total:"<< grandprice << "EGP\n" ;
-  cout << "\nDo you want to continue? (y/n):";
-  cin >> keep;
- }
- return grandprice;
-}
-bool checkCredits(double total) {
-if (total >= 1000) {
-cout <<"\n_________________________\n";
-cout << "\nCongratulations!\n";
-cout <<"\n____________________________\n";
-cout << "Your total it " << total << " EGP. "<< endl;
-cout<<" You have just won 500 EGP as a special gift.Enjoy your reward.\n";
-return false ;
-}
-else {
-double remaining = 1000- total ;
-cout << "your total it "<< total << " EGP" ;
-cout << "You need " << remaining << " EGP more to get 500 credits.\n";
-char choicee ;
-cout << " \nDo You Want Continue Shopping ? (Y/N):" ;
-cin>> choicee ;
-if( choicee =='Y' || choicee =='y')
-{return true ;}
-else
-{return false;}
-}
-}
-void payment ( long long total) {
-string name;
-string address;
-cout << "\n====================\n" << "customer information\n" << "\n====================\n";
-cout << "Enter your name : ";
-cin >> name;
-cout << "Enter your address : ";
-cin >> address;
-cout << "\n====================\n" << "order summary\n" << "\n====================\n";
-cout << "Customer name : " << name << endl;
-cout << "Address : " << address << endl;
-cout << "Total : " << total << " EGP" << endl;
-cout << "Amount to pay : " << total << " EGP" << endl;
-cout << "\n====================\n" << "order confirmed" << "\n====================\n";
-cout << "Thank you, " << name << "!\n";
-cout << "Your order will be delivered to : " << address << endl;
-cout << "Your order has been successfully placed\n" << "====================================\n";
-}
-int main ()
-{
+#include <vector>
 
-    string products[50] {
+using namespace std;
+
+class SupermarketApp {
+private:
+    string products[50] = {
         "Milk" , "Bread" , "Rice" , "Sugar" , "Juice" , "Cheese" , "Eggs" , "Water" , "Tea" , "Coffee" ,
         "Biscuits" , "Chips" , "Pasta" , "Oil" , "Flour" , "Salt" , "Yogurt" , "Butter" , "Chicken" ,
         "Apples" , "Bananas" , "Oranges" , "Tomatoes" , "Potatoes" , "Onions" , "Carrots" , "Cucumber" ,
@@ -87,27 +14,184 @@ int main ()
         "Tuna" , "Sausage" , "Beef" , "Fish" , "Frozen Vegetables" , "Ice Cream" , "Cake" , "Donuts" ,
         "Con Flakes" , "Chocolate" , "Soap" , "Shampoo" , "Toothpaste" , "Tissues" , "Detergent"
     };
-    int prices[50] = { 35 , 35 , 50 , 20 , 15 , 120 , 100 , 10 , 90 , 80 , 30 , 20 , 35 , 70 , 35 , 45 ,
-     20 , 120 , 90 , 80 , 35 , 25 , 30 , 15 , 15 , 10 , 15 , 20 , 15 , 35 , 40 , 60 , 45 , 70 , 55 ,
-     90 , 55 , 220 , 150 , 25 , 40 , 10 , 50 , 75 , 100 , 20 , 100 , 65 , 35 , 35
+
+    int prices[50] = {
+        35 , 35 , 50 , 20 , 15 , 120 , 100 , 10 , 90 , 80 , 30 , 20 , 35 , 70 , 35 , 45 ,
+        20 , 120 , 90 , 80 , 35 , 25 , 30 , 15 , 15 , 10 , 15 , 20 , 15 , 35 , 40 , 60 , 45 , 70 , 55 ,
+        90 , 55 , 220 , 150 , 25 , 40 , 10 , 50 , 75 , 100 , 20 , 100 , 65 , 35 , 35
     };
-    supermarketproducts (products, prices) ;
+
     int total = 0;
-    while (true) {
-      int newtotal = runcartsystem (products, prices);
-   total += newtotal;
-    cout << "\n ==============================\n" ;
-    cout << "Grand Total :" << total << " EGP\n";
-    cout << "\n ==============================\n" ;
-    bool ShoppingCredits = checkCredits(total) ;
-    if ( ShoppingCredits == false ) {
-            payment(total);
-        break;
+    vector<int> cartPrices; // لحفظ سعر كل عنصر مضاف في السلة لحساب الخصم عند الحذف
+
+    HWND hProductList, hCartList, hQtyEdit, hTotalText, hNameEdit, hAddressEdit;
+
+public:
+    void supermarketproducts() {
+        for (int i = 0; i < 50; i++) {
+            string item = to_string(i + 1) + ". " + products[i] + " - " + to_string(prices[i]) + " EGP";
+            SendMessage(hProductList, LB_ADDSTRING, 0, (LPARAM)item.c_str());
         }
     }
-    cout << "\n========================================\n";
-cout << "Thank you for shopping with us.\n";
-cout << "We hope to see you again!\n";
-cout << "========================================\n";
-    return 0;
+
+    bool checkCredits(double currentTotal) {
+        if (currentTotal >= 1000) {
+            string msg = "Congratulations!\nYour total is " + to_string((int)currentTotal) + " EGP.\nYou have just won 500 EGP as a special gift. Enjoy your reward.";
+            MessageBox(NULL, msg.c_str(), "Reward!", MB_OK | MB_ICONINFORMATION);
+            return false;
+        } else {
+            double remaining = 1000 - currentTotal;
+            string msg = "Your total is " + to_string((int)currentTotal) + " EGP.\nYou need " + to_string((int)remaining) + " EGP more to get 500 credits.\n\nDo you want to continue shopping?";
+            int choice = MessageBox(NULL, msg.c_str(), "Shopping Credits", MB_YESNO | MB_ICONQUESTION);
+            return (choice == IDYES);
+        }
     }
+
+    void payment(long long currentTotal, string name, string address) {
+        if (name.empty()) name = "Customer";
+        if (address.empty()) address = "Unknown Address";
+
+        string summary = "==== Order Summary ====\n";
+        summary += "Customer name : " + name + "\n";
+        summary += "Address : " + address + "\n";
+        summary += "Total : " + to_string(currentTotal) + " EGP\n";
+        summary += "Amount to pay : " + to_string(currentTotal) + " EGP\n\n";
+        summary += "Thank you, " + name + "!\n";
+        summary += "Your order will be delivered to : " + address + "\n";
+        summary += "Your order has been successfully placed!";
+
+        MessageBox(NULL, summary.c_str(), "Order Confirmed", MB_OK | MB_ICONINFORMATION);
+    }
+
+    void setupUI(HWND hwnd) {
+        CreateWindow("STATIC", "Products List:", WS_VISIBLE | WS_CHILD, 20, 10, 150, 20, hwnd, NULL, NULL, NULL);
+        hProductList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | LBS_NOTIFY, 20, 30, 250, 290, hwnd, NULL, NULL, NULL);
+
+        CreateWindow("STATIC", "Quantity:", WS_VISIBLE | WS_CHILD, 20, 335, 60, 20, hwnd, NULL, NULL, NULL);
+        hQtyEdit = CreateWindow("EDIT", "1", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER, 80, 333, 40, 22, hwnd, NULL, NULL, NULL);
+        CreateWindow("BUTTON", "Add to Cart", WS_VISIBLE | WS_CHILD, 130, 331, 140, 26, hwnd, (HMENU)1, NULL, NULL);
+
+        CreateWindow("STATIC", "Shopping Cart:", WS_VISIBLE | WS_CHILD, 300, 10, 150, 20, hwnd, NULL, NULL, NULL);
+        hCartList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 300, 30, 250, 160, hwnd, NULL, NULL, NULL);
+
+        // زر إزالة المنتج المحدد من السلة
+        CreateWindow("BUTTON", "Remove Selected Item", WS_VISIBLE | WS_CHILD, 300, 198, 250, 26, hwnd, (HMENU)3, NULL, NULL);
+
+        hTotalText = CreateWindow("STATIC", "Grand Total: 0 EGP", WS_VISIBLE | WS_CHILD, 300, 232, 200, 20, hwnd, NULL, NULL, NULL);
+
+        CreateWindow("STATIC", "Name:", WS_VISIBLE | WS_CHILD, 300, 262, 60, 20, hwnd, NULL, NULL, NULL);
+        hNameEdit = CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 360, 260, 190, 22, hwnd, NULL, NULL, NULL);
+
+        CreateWindow("STATIC", "Address:", WS_VISIBLE | WS_CHILD, 300, 292, 60, 20, hwnd, NULL, NULL, NULL);
+        hAddressEdit = CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 360, 290, 190, 22, hwnd, NULL, NULL, NULL);
+
+        CreateWindow("BUTTON", "Checkout / Pay", WS_VISIBLE | WS_CHILD, 300, 325, 250, 35, hwnd, (HMENU)2, NULL, NULL);
+
+        supermarketproducts();
+    }
+
+    void handleAddToCart(HWND hwnd) {
+        int choice = SendMessage(hProductList, LB_GETCURSEL, 0, 0);
+        if (choice == LB_ERR) {
+            MessageBox(hwnd, "Please select a product first!", "Error", MB_OK | MB_ICONERROR);
+            return;
+        }
+        char qtyStr[10];
+        GetWindowText(hQtyEdit, qtyStr, 10);
+        int quantity = atoi(qtyStr);
+        if (quantity <= 0) quantity = 1;
+
+        int itemprice = prices[choice] * quantity;
+        total += itemprice;
+        cartPrices.push_back(itemprice);
+
+        string cartItem = products[choice] + " x" + to_string(quantity) + " = " + to_string(itemprice) + " EGP";
+        SendMessage(hCartList, LB_ADDSTRING, 0, (LPARAM)cartItem.c_str());
+
+        string totStr = "Grand Total: " + to_string(total) + " EGP";
+        SetWindowText(hTotalText, totStr.c_str());
+    }
+
+    void handleRemoveFromCart(HWND hwnd) {
+        int sel = SendMessage(hCartList, LB_GETCURSEL, 0, 0);
+        if (sel == LB_ERR) {
+            MessageBox(hwnd, "Please select an item from the cart to remove!", "Warning", MB_OK | MB_ICONWARNING);
+            return;
+        }
+
+        total -= cartPrices[sel];
+        cartPrices.erase(cartPrices.begin() + sel);
+
+        SendMessage(hCartList, LB_DELETESTRING, sel, 0);
+
+        string totStr = "Grand Total: " + to_string(total) + " EGP";
+        SetWindowText(hTotalText, totStr.c_str());
+    }
+
+    void handleCheckout(HWND hwnd) {
+        if (total == 0) {
+            MessageBox(hwnd, "Your cart is empty!", "Warning", MB_OK | MB_ICONWARNING);
+            return;
+        }
+
+        bool cont = checkCredits(total);
+        if (!cont) {
+            char nameBuf[100], addrBuf[100];
+            GetWindowText(hNameEdit, nameBuf, 100);
+            GetWindowText(hAddressEdit, addrBuf, 100);
+
+            payment(total, nameBuf, addrBuf);
+
+            total = 0;
+            cartPrices.clear();
+            SendMessage(hCartList, LB_RESETCONTENT, 0, 0);
+            SetWindowText(hTotalText, "Grand Total: 0 EGP");
+            SetWindowText(hNameEdit, "");
+            SetWindowText(hAddressEdit, "");
+        }
+    }
+};
+
+SupermarketApp app;
+
+LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+    case WM_CREATE:
+        app.setupUI(hwnd);
+        break;
+    case WM_COMMAND:
+        if (LOWORD(wp) == 1) {
+            app.handleAddToCart(hwnd);
+        } else if (LOWORD(wp) == 2) {
+            app.handleCheckout(hwnd);
+        } else if (LOWORD(wp) == 3) {
+            app.handleRemoveFromCart(hwnd); // استدعاء دالة الحذف
+        }
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hwnd, msg, wp, lp);
+    }
+    return 0;
+}
+
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int nCmdShow) {
+    WNDCLASS wc = {0};
+    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hInstance = hInst;
+    wc.lpszClassName = "SupermarketAppOOP";
+    wc.lpfnWndProc = WindowProcedure;
+
+    RegisterClass(&wc);
+    CreateWindow("SupermarketAppOOP", "Supermarket Weshweshny (C++ OOP GUI)", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 200, 150, 580, 430, NULL, NULL, hInst, NULL);
+
+    MSG msg = {0};
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return 0;
+}
