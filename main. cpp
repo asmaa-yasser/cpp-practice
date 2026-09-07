@@ -1,0 +1,113 @@
+#include <iostream>
+#include <string>
+using namespace std;
+void supermarketproducts(string products[50],int prices[50]) {
+cout << "Welcome to our supermarket!\n " << endl;
+    cout << "==== Supermarket Weshweshny ==== \n\n";
+    cout << "__________products_____________ \n\n";
+    for ( int i = 0 ; i < 50 ; i++ ) {
+        cout << i + 1 << ". " << products[i] << " - " << prices[i] << "EGP\t \t";
+        if ((i +1) % 3 == 0 ) {
+            cout << "\n";
+        }
+             }
+           cout << "\n__________________________________________________________________________________\n";
+    }
+int runcartsystem ( string products[50] , int prices[50]) {
+int grandprice = 0 ;
+char keep = 'y' ;
+while(keep == 'y' || keep == 'Y'){
+ int choice ;
+ int quantity ;
+ cout << "\n Enter product number:\n";
+ cin >> choice ;
+ cout << "Enter quantity:";
+ cin >> quantity ;
+ int itemprice = prices [choice - 1] * quantity ;
+ grandprice +=itemprice;
+ cout<< " Your bought : \n";
+ cout << " products : " << products [choice - 1]<<"\n";
+ cout << "Quantity : " <<quantity << endl;
+ cout << "price : " << prices [choice-1]<< "EGP" << endl;
+ cout << "Total : "<< itemprice <<"EGP" << endl;
+ cout << "\nCurrent Grand Total:"<< grandprice << "EGP\n" ;
+  cout << "\nDo you want to continue? (y/n):";
+  cin >> keep;
+ }
+ return grandprice;
+}
+bool checkCredits(double total) {
+if (total >= 1000) {
+cout <<"\n_________________________\n";
+cout << "\nCongratulations!\n";
+cout <<"\n____________________________\n";
+cout << "Your total it " << total << " EGP. "<< endl;
+cout<<" You have just won 500 EGP as a special gift.Enjoy your reward.\n";
+return false ;
+}
+else {
+double remaining = 1000- total ;
+cout << "your total it "<< total << " EGP" ;
+cout << "You need " << remaining << " EGP more to get 500 credits.\n";
+char choicee ;
+cout << " \nDo You Want Continue Shopping ? (Y/N):" ;
+cin>> choicee ;
+if( choicee =='Y' || choicee =='y')
+{return true ;}
+else
+{return false;}
+}
+}
+void payment ( long long total) {
+string name;
+string address;
+cout << "\n====================\n" << "customer information\n" << "\n====================\n";
+cout << "Enter your name : ";
+cin >> name;
+cout << "Enter your address : ";
+cin >> address;
+cout << "\n====================\n" << "order summary\n" << "\n====================\n";
+cout << "Customer name : " << name << endl;
+cout << "Address : " << address << endl;
+cout << "Total : " << total << " EGP" << endl;
+cout << "Amount to pay : " << total << " EGP" << endl;
+cout << "\n====================\n" << "order confirmed" << "\n====================\n";
+cout << "Thank you, " << name << "!\n";
+cout << "Your order will be delivered to : " << address << endl;
+cout << "Your order has been successfully placed\n" << "====================================\n";
+}
+int main ()
+{
+
+    string products[50] {
+        "Milk" , "Bread" , "Rice" , "Sugar" , "Juice" , "Cheese" , "Eggs" , "Water" , "Tea" , "Coffee" ,
+        "Biscuits" , "Chips" , "Pasta" , "Oil" , "Flour" , "Salt" , "Yogurt" , "Butter" , "Chicken" ,
+        "Apples" , "Bananas" , "Oranges" , "Tomatoes" , "Potatoes" , "Onions" , "Carrots" , "Cucumber" ,
+        "Lettuce" , "Peppers" , "Garlic" , "Jam" , "Honey" , "Ketchup" , "Mayonnaise" , "Vinegar" ,
+        "Tuna" , "Sausage" , "Beef" , "Fish" , "Frozen Vegetables" , "Ice Cream" , "Cake" , "Donuts" ,
+        "Con Flakes" , "Chocolate" , "Soap" , "Shampoo" , "Toothpaste" , "Tissues" , "Detergent"
+    };
+    int prices[50] = { 35 , 35 , 50 , 20 , 15 , 120 , 100 , 10 , 90 , 80 , 30 , 20 , 35 , 70 , 35 , 45 ,
+     20 , 120 , 90 , 80 , 35 , 25 , 30 , 15 , 15 , 10 , 15 , 20 , 15 , 35 , 40 , 60 , 45 , 70 , 55 ,
+     90 , 55 , 220 , 150 , 25 , 40 , 10 , 50 , 75 , 100 , 20 , 100 , 65 , 35 , 35
+    };
+    supermarketproducts (products, prices) ;
+    int total = 0;
+    while (true) {
+      int newtotal = runcartsystem (products, prices);
+   total += newtotal;
+    cout << "\n ==============================\n" ;
+    cout << "Grand Total :" << total << " EGP\n";
+    cout << "\n ==============================\n" ;
+    bool ShoppingCredits = checkCredits(total) ;
+    if ( ShoppingCredits == false ) {
+            payment(total);
+        break;
+        }
+    }
+    cout << "\n========================================\n";
+cout << "Thank you for shopping with us.\n";
+cout << "We hope to see you again!\n";
+cout << "========================================\n";
+    return 0;
+    }
