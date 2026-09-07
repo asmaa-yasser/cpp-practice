@@ -1,4 +1,4 @@
-#Supermarket Management System
+Supermarket Management System
 
 A C++ console application that simulates a supermarket purchasing system. 
 
