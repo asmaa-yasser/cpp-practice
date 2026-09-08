@@ -1,197 +1,925 @@
 #include <windows.h>
 #include <string>
-#include <vector>
-
+#include <sstream>
 using namespace std;
-
-class SupermarketApp {
-private:
-    string products[50] = {
-        "Milk" , "Bread" , "Rice" , "Sugar" , "Juice" , "Cheese" , "Eggs" , "Water" , "Tea" , "Coffee" ,
-        "Biscuits" , "Chips" , "Pasta" , "Oil" , "Flour" , "Salt" , "Yogurt" , "Butter" , "Chicken" ,
-        "Apples" , "Bananas" , "Oranges" , "Tomatoes" , "Potatoes" , "Onions" , "Carrots" , "Cucumber" ,
-        "Lettuce" , "Peppers" , "Garlic" , "Jam" , "Honey" , "Ketchup" , "Mayonnaise" , "Vinegar" ,
-        "Tuna" , "Sausage" , "Beef" , "Fish" , "Frozen Vegetables" , "Ice Cream" , "Cake" , "Donuts" ,
-        "Con Flakes" , "Chocolate" , "Soap" , "Shampoo" , "Toothpaste" , "Tissues" , "Detergent"
-    };
-
-    int prices[50] = {
-        35 , 35 , 50 , 20 , 15 , 120 , 100 , 10 , 90 , 80 , 30 , 20 , 35 , 70 , 35 , 45 ,
-        20 , 120 , 90 , 80 , 35 , 25 , 30 , 15 , 15 , 10 , 15 , 20 , 15 , 35 , 40 , 60 , 45 , 70 , 55 ,
-        90 , 55 , 220 , 150 , 25 , 40 , 10 , 50 , 75 , 100 , 20 , 100 , 65 , 35 , 35
-    };
-
-    int total = 0;
-    vector<int> cartPrices; // لحفظ سعر كل عنصر مضاف في السلة لحساب الخصم عند الحذف
-
-    HWND hProductList, hCartList, hQtyEdit, hTotalText, hNameEdit, hAddressEdit;
-
-public:
-    void supermarketproducts() {
-        for (int i = 0; i < 50; i++) {
-            string item = to_string(i + 1) + ". " + products[i] + " - " + to_string(prices[i]) + " EGP";
-            SendMessage(hProductList, LB_ADDSTRING, 0, (LPARAM)item.c_str());
-        }
-    }
-
-    bool checkCredits(double currentTotal) {
-        if (currentTotal >= 1000) {
-            string msg = "Congratulations!\nYour total is " + to_string((int)currentTotal) + " EGP.\nYou have just won 500 EGP as a special gift. Enjoy your reward.";
-            MessageBox(NULL, msg.c_str(), "Reward!", MB_OK | MB_ICONINFORMATION);
-            return false;
-        } else {
-            double remaining = 1000 - currentTotal;
-            string msg = "Your total is " + to_string((int)currentTotal) + " EGP.\nYou need " + to_string((int)remaining) + " EGP more to get 500 credits.\n\nDo you want to continue shopping?";
-            int choice = MessageBox(NULL, msg.c_str(), "Shopping Credits", MB_YESNO | MB_ICONQUESTION);
-            return (choice == IDYES);
-        }
-    }
-
-    void payment(long long currentTotal, string name, string address) {
-        if (name.empty()) name = "Customer";
-        if (address.empty()) address = "Unknown Address";
-
-        string summary = "==== Order Summary ====\n";
-        summary += "Customer name : " + name + "\n";
-        summary += "Address : " + address + "\n";
-        summary += "Total : " + to_string(currentTotal) + " EGP\n";
-        summary += "Amount to pay : " + to_string(currentTotal) + " EGP\n\n";
-        summary += "Thank you, " + name + "!\n";
-        summary += "Your order will be delivered to : " + address + "\n";
-        summary += "Your order has been successfully placed!";
-
-        MessageBox(NULL, summary.c_str(), "Order Confirmed", MB_OK | MB_ICONINFORMATION);
-    }
-
-    void setupUI(HWND hwnd) {
-        CreateWindow("STATIC", "Products List:", WS_VISIBLE | WS_CHILD, 20, 10, 150, 20, hwnd, NULL, NULL, NULL);
-        hProductList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | LBS_NOTIFY, 20, 30, 250, 290, hwnd, NULL, NULL, NULL);
-
-        CreateWindow("STATIC", "Quantity:", WS_VISIBLE | WS_CHILD, 20, 335, 60, 20, hwnd, NULL, NULL, NULL);
-        hQtyEdit = CreateWindow("EDIT", "1", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER, 80, 333, 40, 22, hwnd, NULL, NULL, NULL);
-        CreateWindow("BUTTON", "Add to Cart", WS_VISIBLE | WS_CHILD, 130, 331, 140, 26, hwnd, (HMENU)1, NULL, NULL);
-
-        CreateWindow("STATIC", "Shopping Cart:", WS_VISIBLE | WS_CHILD, 300, 10, 150, 20, hwnd, NULL, NULL, NULL);
-        hCartList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 300, 30, 250, 160, hwnd, NULL, NULL, NULL);
-
-        // زر إزالة المنتج المحدد من السلة
-        CreateWindow("BUTTON", "Remove Selected Item", WS_VISIBLE | WS_CHILD, 300, 198, 250, 26, hwnd, (HMENU)3, NULL, NULL);
-
-        hTotalText = CreateWindow("STATIC", "Grand Total: 0 EGP", WS_VISIBLE | WS_CHILD, 300, 232, 200, 20, hwnd, NULL, NULL, NULL);
-
-        CreateWindow("STATIC", "Name:", WS_VISIBLE | WS_CHILD, 300, 262, 60, 20, hwnd, NULL, NULL, NULL);
-        hNameEdit = CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 360, 260, 190, 22, hwnd, NULL, NULL, NULL);
-
-        CreateWindow("STATIC", "Address:", WS_VISIBLE | WS_CHILD, 300, 292, 60, 20, hwnd, NULL, NULL, NULL);
-        hAddressEdit = CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 360, 290, 190, 22, hwnd, NULL, NULL, NULL);
-
-        CreateWindow("BUTTON", "Checkout / Pay", WS_VISIBLE | WS_CHILD, 300, 325, 250, 35, hwnd, (HMENU)2, NULL, NULL);
-
-        supermarketproducts();
-    }
-
-    void handleAddToCart(HWND hwnd) {
-        int choice = SendMessage(hProductList, LB_GETCURSEL, 0, 0);
-        if (choice == LB_ERR) {
-            MessageBox(hwnd, "Please select a product first!", "Error", MB_OK | MB_ICONERROR);
-            return;
-        }
-        char qtyStr[10];
-        GetWindowText(hQtyEdit, qtyStr, 10);
-        int quantity = atoi(qtyStr);
-        if (quantity <= 0) quantity = 1;
-
-        int itemprice = prices[choice] * quantity;
-        total += itemprice;
-        cartPrices.push_back(itemprice);
-
-        string cartItem = products[choice] + " x" + to_string(quantity) + " = " + to_string(itemprice) + " EGP";
-        SendMessage(hCartList, LB_ADDSTRING, 0, (LPARAM)cartItem.c_str());
-
-        string totStr = "Grand Total: " + to_string(total) + " EGP";
-        SetWindowText(hTotalText, totStr.c_str());
-    }
-
-    void handleRemoveFromCart(HWND hwnd) {
-        int sel = SendMessage(hCartList, LB_GETCURSEL, 0, 0);
-        if (sel == LB_ERR) {
-            MessageBox(hwnd, "Please select an item from the cart to remove!", "Warning", MB_OK | MB_ICONWARNING);
-            return;
-        }
-
-        total -= cartPrices[sel];
-        cartPrices.erase(cartPrices.begin() + sel);
-
-        SendMessage(hCartList, LB_DELETESTRING, sel, 0);
-
-        string totStr = "Grand Total: " + to_string(total) + " EGP";
-        SetWindowText(hTotalText, totStr.c_str());
-    }
-
-    void handleCheckout(HWND hwnd) {
-        if (total == 0) {
-            MessageBox(hwnd, "Your cart is empty!", "Warning", MB_OK | MB_ICONWARNING);
-            return;
-        }
-
-        bool cont = checkCredits(total);
-        if (!cont) {
-            char nameBuf[100], addrBuf[100];
-            GetWindowText(hNameEdit, nameBuf, 100);
-            GetWindowText(hAddressEdit, addrBuf, 100);
-
-            payment(total, nameBuf, addrBuf);
-
-            total = 0;
-            cartPrices.clear();
-            SendMessage(hCartList, LB_RESETCONTENT, 0, 0);
-            SetWindowText(hTotalText, "Grand Total: 0 EGP");
-            SetWindowText(hNameEdit, "");
-            SetWindowText(hAddressEdit, "");
-        }
-    }
+#define BG_COLOR        RGB(15, 18, 45)
+#define PURPLE_COLOR    RGB(91, 45, 145)
+#define CYAN_COLOR      RGB(0, 210, 220)
+#define GREEN_COLOR     RGB(40, 180, 100)
+#define BLUE_COLOR      RGB(45, 120, 220)
+#define RED_COLOR       RGB(210, 55, 70)
+#define PINK_COLOR      RGB(220, 80, 150)
+#define GOLD_COLOR      RGB(255, 200, 50)
+#define WHITE_COLOR     RGB(245, 245, 245)
+#define INPUT_COLOR     RGB(240, 240, 250)
+#define DARK_TEXT       RGB(25, 25, 40)
+HWND hList; HWND hCart; HWND hProduct; HWND hQuantity; HWND hName;
+HWND hAddress; HWND hTotal; HWND hMessage;
+int grandTotal = 0;
+int cartQuantity[50] = {0};
+bool creditWon = false;
+string products[50] = { "Milk", "Bread", "Rice", "Sugar", "Juice","Cheese", "Eggs", "Water",
+    "Tea", "Coffee", "Biscuits", "Chips","Pasta", "Oil", "Flour", "Salt", "Yogurt", "Butter",
+    "Chicken", "Apples", "Bananas", "Oranges", "Tomatoes", "Potatoes", "Onions","Carrots",
+    "Cucumber", "Lettuce", "Peppers", "Garlic", "Jam", "Honey", "Ketchup", "Mayonnaise",
+    "Vinegar", "Tuna", "Sausage", "Beef", "Fish","Frozen Vegetables", "Ice Cream", "Cake",
+    "Donuts","Con Flakes","Chocolate", "Soap", "Shampoo", "Toothpaste", "Tissues", "Detergent"
 };
-
-SupermarketApp app;
-
-LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-    switch (msg) {
-    case WM_CREATE:
-        app.setupUI(hwnd);
-        break;
-    case WM_COMMAND:
-        if (LOWORD(wp) == 1) {
-            app.handleAddToCart(hwnd);
-        } else if (LOWORD(wp) == 2) {
-            app.handleCheckout(hwnd);
-        } else if (LOWORD(wp) == 3) {
-            app.handleRemoveFromCart(hwnd); // استدعاء دالة الحذف
+int prices[50] = { 35, 35, 50, 20, 15, 120, 100, 10, 90, 80, 30, 20, 35, 70, 35,
+    45, 20, 120, 90, 80, 35, 25, 30, 15, 15, 10, 15, 20, 15, 35, 40, 60, 45, 70,
+    55, 90, 55, 220, 150, 25, 40, 10, 50, 75, 100, 20, 100, 65, 35, 35
+};
+HWND AddLabel(
+    HWND parent, const char* text, int x, int y, int width, int height
+)
+{
+    return CreateWindowA(
+        "STATIC",
+        text, WS_VISIBLE | WS_CHILD, x, y, width, height, parent, NULL, NULL, NULL
+    );
+}
+HWND AddButton(
+    HWND parent, const char* text, int id, int x, int y, int width, int height
+)
+{
+    return CreateWindowA(
+        "BUTTON", text, WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, x, y, width,
+        height, parent, (HMENU)id, NULL, NULL
+    );
+}
+void UpdateCart() {
+    SendMessageA(
+        hCart,
+        LB_RESETCONTENT,
+        0,
+        0
+    );
+    bool empty = true;
+    for (int i = 0; i < 50; i++) {
+        if (cartQuantity[i] > 0) {
+            empty = false;
+            stringstream ss;
+            ss << products[i]
+               << "   x"
+               << cartQuantity[i]
+               << "   = "
+               << prices[i] * cartQuantity[i]
+               << " EGP";
+            SendMessageA(
+                hCart,
+                LB_ADDSTRING,
+                0,
+                (LPARAM)ss.str().c_str()
+            );
         }
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hwnd, msg, wp, lp);
+    }
+    if (empty) {
+        SendMessageA(
+            hCart,
+            LB_ADDSTRING,
+            0,
+            (LPARAM)"Your cart is empty"
+        );
+    }
+}
+void UpdateTotal() {
+    stringstream ss;
+    ss << "Grand Total: "
+       << grandTotal
+       << " EGP";
+    SetWindowTextA(
+        hTotal,
+        ss.str().c_str()
+    );
+}
+void CheckCredit(HWND hwnd) {
+    if (grandTotal >= 1000 && creditWon == false){
+        creditWon = true;
+        stringstream ss;
+        ss << "Congratulations!\n"
+           << "Your total is "
+           << grandTotal
+           << " EGP.\n"
+           << "You won 200 EGP Credit!";
+
+        SetWindowTextA(
+            hMessage,
+            ss.str().c_str()
+        );
+
+        MessageBoxA(
+            hwnd,
+            "Congratulations!\n\n"
+            "You reached 1000 EGP!\n\n"
+            "You have won 200 EGP Credit!",
+            "SPECIAL GIFT",
+            MB_OK | MB_ICONINFORMATION
+        );
+    }
+}
+LRESULT CALLBACK WindowProcedure(
+    HWND hwnd, UINT message, WPARAM wp, LPARAM lp
+)
+{
+    switch (message) {
+        case WM_CREATE: {
+            AddLabel(
+                hwnd,
+                "SUPERMARKET WESHWESHNY",
+                35,
+                25,
+                700,
+                50
+            );
+            AddLabel(
+                hwnd,
+                "Fresh Products - Great Prices - Special Credit",
+                35,
+                75,
+                700,
+                30
+            );
+            AddLabel(
+                hwnd,
+                "PRODUCTS",
+                35,
+                115,
+                300,
+                25
+            );
+            hList = CreateWindowA(
+                "LISTBOX",
+                "",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER |
+                LBS_NOTIFY |
+                WS_VSCROLL,
+                35,
+                140,
+                365,
+                390,
+                hwnd,
+                (HMENU)10,
+                NULL,
+                NULL
+            );
+            for (int i = 0; i < 50; i++) {
+                stringstream ss;
+                ss << i + 1
+                   << ". "
+                   << products[i]
+                   << " - "
+                   << prices[i]
+                   << " EGP";
+                SendMessageA(
+                    hList,
+                    LB_ADDSTRING,
+                    0,
+                    (LPARAM)ss.str().c_str()
+                );
+            }
+            AddLabel(
+                hwnd,
+                "SHOPPING CART",
+                430,
+                115,
+                300,
+                25
+            );
+            hCart = CreateWindowA(
+                "LISTBOX",
+                "",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER |
+                LBS_NOTIFY |
+                WS_VSCROLL,
+                430,
+                140,
+                330,
+                140,
+                hwnd,
+                (HMENU)11,
+                NULL,
+                NULL
+            );
+            AddLabel(
+                hwnd,
+                "Product Number:",
+                430,
+                300,
+                150,
+                25
+            );
+            hProduct = CreateWindowA(
+                "EDIT",
+                "",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER |
+                ES_NUMBER,
+                590,
+                295,
+                170,
+                30,
+                hwnd,
+                (HMENU)20,
+                NULL,
+                NULL
+            );
+            AddLabel(
+                hwnd,
+                "Quantity:",
+                430,
+                345,
+                150,
+                25
+            );
+            hQuantity = CreateWindowA(
+                "EDIT",
+                "1",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER |
+                ES_NUMBER,
+                590,
+                340,
+                170,
+                30,
+                hwnd,
+                (HMENU)21,
+                NULL,
+                NULL
+            );
+            AddButton(
+                hwnd,
+                "ADD TO CART",
+                100,
+                430,
+                390,
+                330,
+                45
+            );
+            AddButton(
+                hwnd,
+                "REMOVE ITEM",
+                103,
+                430,
+                445,
+                330,
+                45
+            );
+            hTotal = AddLabel(
+                hwnd,
+                "Grand Total: 0 EGP",
+                430,
+                510,
+                330,
+                55
+            );
+            hMessage = AddLabel(
+                hwnd,
+                "Add products to start shopping!",
+                430,
+                575,
+                330,
+                70
+            );
+            AddLabel(
+                hwnd,
+                "CUSTOMER INFORMATION",
+                35,
+                550,
+                330,
+                30
+            );
+            AddLabel(
+                hwnd,
+                "Name:",
+                35,
+                605,
+                75,
+                30
+            );
+            hName = CreateWindowA(
+                "EDIT",
+                "",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER,
+                120,
+                600,
+                270,
+                32,
+                hwnd,
+                (HMENU)40,
+                NULL,
+                NULL
+            );
+            AddLabel(
+                hwnd,
+                "Address:",
+                35,
+                650,
+                75,
+                30
+            );
+            hAddress = CreateWindowA(
+                "EDIT",
+                "",
+                WS_VISIBLE |
+                WS_CHILD |
+                WS_BORDER,
+                120,
+                645,
+                270,
+                32,
+                hwnd,
+                (HMENU)41,
+                NULL,
+                NULL
+            );
+            AddButton(
+                hwnd,
+                "CHECKOUT",
+                101,
+                430,
+                665,
+                160,
+                45
+            );
+            AddButton(
+                hwnd,
+                "CLEAR CART",
+                102,
+                600,
+                665,
+                160,
+                45
+            );
+            UpdateCart();
+            UpdateTotal();
+            break;
+        }
+        case WM_COMMAND:{
+            int id = LOWORD(wp);
+            if (
+                id == 10 &&
+                HIWORD(wp) == LBN_SELCHANGE
+            )
+            {
+                int selected =
+                    SendMessageA(
+                        hList,
+                        LB_GETCURSEL,
+                        0,
+                        0
+                    );
+                if (selected != LB_ERR){
+                    stringstream ss;
+                    ss << selected + 1;
+                    SetWindowTextA(
+                        hProduct,
+                        ss.str().c_str()
+                    );
+                    SetWindowTextA(
+                        hQuantity,
+                        "1"
+                    );
+                }
+            }
+            else if (id == 100){
+                char productText[50];
+                char quantityText[50];
+                GetWindowTextA(
+                    hProduct,
+                    productText,
+                    50
+                );
+                GetWindowTextA(
+                    hQuantity,
+                    quantityText,
+                    50
+                );
+                int productNumber =
+                    atoi(productText);
+                int quantity =
+                    atoi(quantityText);
+                if (
+                    productNumber < 1 ||
+                    productNumber > 50
+                )
+                {
+                    MessageBoxA(
+                        hwnd,
+                        "Please enter a valid product number (1 - 50).",
+                        "Invalid Product",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    break;
+                }
+                if (quantity < 1) {
+                    MessageBoxA(
+                        hwnd,
+                        "Quantity must be at least 1.",
+                        "Invalid Quantity",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    break;
+                }
+                int index =
+                    productNumber - 1;
+                cartQuantity[index] += quantity;
+                int itemTotal =
+                    prices[index] * quantity;
+                grandTotal += itemTotal;
+                UpdateCart();
+                UpdateTotal();
+                stringstream messageText;
+                messageText
+                    << products[index]
+                    << " x"
+                    << quantity
+                    << " added to your cart.";
+                SetWindowTextA(
+                    hMessage,
+                    messageText.str().c_str()
+                );
+                SetWindowTextA(
+                    hProduct,
+                    ""
+                );
+                SetWindowTextA(
+                    hQuantity,
+                    "1"
+                );
+                if (
+                    grandTotal >= 1000 &&
+                    creditWon == false
+                )
+                {
+                    CheckCredit(hwnd);
+                }
+                else if (grandTotal < 1000) {
+                    int remaining =
+                        1000 - grandTotal;
+                    stringstream ss;
+                    ss
+                        << "You need "
+                        << remaining
+                        << " EGP more to get 200 EGP Credit.";
+                    SetWindowTextA(
+                        hMessage,
+                        ss.str().c_str()
+                    );
+                }
+                break;
+            }
+            else if (id == 103) {
+                int selected =
+                    SendMessageA(
+                        hCart,
+                        LB_GETCURSEL,
+                        0,
+                        0
+                    );
+                if (selected == LB_ERR) {
+                    MessageBoxA(
+                        hwnd,
+                        "Please select an item from your cart first.",
+                        "Remove Item",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    break;
+                }
+                int currentItem = -1;
+                int counter = 0;
+                for (int i = 0; i < 50; i++) {
+                    if (cartQuantity[i] > 0) {
+                        if (counter == selected) {
+                            currentItem = i;
+                            break;
+                        }
+                        counter++;
+                    }
+                }
+                if (currentItem == -1) {
+                    break;
+                }
+                int removedPrice =
+                    prices[currentItem] *
+                    cartQuantity[currentItem];
+                grandTotal -= removedPrice;
+                cartQuantity[currentItem] = 0;
+                UpdateCart();
+                UpdateTotal();
+                stringstream ss;
+                ss
+                    << products[currentItem]
+                    << " removed from your cart.";
+                SetWindowTextA(
+                    hMessage,
+                    ss.str().c_str()
+                );
+                break;
+            }
+            else if (id == 102) {
+                int answer =
+                    MessageBoxA(
+                        hwnd,
+                        "Are you sure you want to clear your cart?",
+                        "Clear Cart",
+                        MB_YESNO | MB_ICONQUESTION
+                    );
+                if (answer == IDYES) {
+                    for (int i = 0; i < 50; i++) {
+                        cartQuantity[i] = 0;
+                    }
+                    grandTotal = 0;
+                    creditWon = false;
+                    UpdateCart();
+                    UpdateTotal();
+                    SetWindowTextA(
+                        hMessage,
+                        "Your cart has been cleared.\n"
+                        "Start a new shopping session!"
+                    );
+                    SetWindowTextA(
+                        hProduct,
+                        ""
+                    );
+                    SetWindowTextA(
+                        hQuantity,
+                        "1"
+                    );
+                }
+                break;
+            }
+            else if (id == 101) {
+                if (grandTotal == 0) {
+                    MessageBoxA(
+                        hwnd,
+                        "Your cart is empty!\n"
+                        "Please add some products first.",
+                        "Empty Cart",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    break;
+                }
+                if (grandTotal < 1000) {
+                    int remaining =
+                        1000 - grandTotal;
+                    stringstream question;
+                    question
+                        << "Your total is "
+                        << grandTotal
+                        << " EGP.\n\n"
+                        << "You need "
+                        << remaining
+                        << " EGP more to get 200 EGP Credit.\n\n"
+                        << "Do you want to continue shopping?";
+                    int answer =
+                        MessageBoxA(
+                            hwnd,
+                            question.str().c_str(),
+                            "Continue Shopping?",
+                            MB_YESNO | MB_ICONQUESTION
+                        );
+                    if (answer == IDYES) {
+                        SetWindowTextA(
+                            hMessage,
+                            "Continue shopping to get 200 EGP Credit!"
+                        );
+                        SetFocus(hList);
+                        break;
+                    }
+                }
+                char name[200];
+                char address[300];
+                GetWindowTextA(
+                    hName,
+                    name,
+                    200
+                );
+                GetWindowTextA(
+                    hAddress,
+                    address,
+                    300
+                );
+                if (name[0] == '\0') {
+                    MessageBoxA(
+                        hwnd,
+                        "Please enter your name.",
+                        "Missing Information",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    SetFocus(hName);
+                    break;
+                }
+                if (address[0] == '\0') {
+                    MessageBoxA(
+                        hwnd,
+                        "Please enter your address.",
+                        "Missing Information",
+                        MB_OK | MB_ICONWARNING
+                    );
+                    SetFocus(hAddress);
+                    break;
+                }
+                string creditMessage;
+                if (grandTotal >= 1000) {
+                    creditMessage =
+                        "\n\nCongratulations!\n"
+                        "You won 200 EGP Credit!";
+                }
+                else
+                {
+                    creditMessage =
+                        "\n\nYou did not reach 1000 EGP.";
+                }
+                stringstream order;
+                order
+                    << "Thank you, "
+                    << name
+                    << "!\n\n"
+                    << "Your order has been successfully placed.\n\n"
+                    << "Total: "
+                    << grandTotal
+                    << " EGP"
+                    << creditMessage
+                    << "\n\n"
+                    << "Your order will be delivered to:\n"
+                    << address
+                    << "\n\n"
+                    << "Thank you for shopping with us!";
+                MessageBoxA(
+                    hwnd,
+                    order.str().c_str(),
+                    "Order Confirmed",
+                    MB_OK | MB_ICONINFORMATION
+                );
+                SetWindowTextA(
+                    hMessage,
+                    "Thank you! Your order will be delivered to your address."
+                );
+                break;
+            }
+            break;
+        }
+        case WM_ERASEBKGND: {
+            HDC hdc =
+                (HDC)wp;
+            RECT rect;
+            GetClientRect(
+                hwnd,
+                &rect
+            );
+            HBRUSH brush =
+                CreateSolidBrush(
+                    BG_COLOR
+                );
+            FillRect(
+                hdc,
+                &rect,
+                brush
+            );
+            DeleteObject(brush);
+            return 1;
+        }
+        case WM_CTLCOLORSTATIC: {
+            HDC hdc =
+                (HDC)wp;
+            HWND control =
+                (HWND)lp;
+            SetBkMode(
+                hdc,
+                TRANSPARENT
+            );
+            if (control == hTotal) {
+                SetTextColor(
+                    hdc,
+                    GOLD_COLOR
+                );
+                SetBkColor(
+                    hdc,
+                    PURPLE_COLOR
+                );
+                static HBRUSH totalBrush =
+                    CreateSolidBrush(
+                        PURPLE_COLOR
+                    );
+                return (LRESULT)totalBrush;
+            }
+            if (control == hMessage) {
+                SetTextColor(
+                    hdc,
+                    CYAN_COLOR
+                );
+                SetBkColor(
+                    hdc,
+                    BG_COLOR
+                );
+                static HBRUSH messageBrush =
+                    CreateSolidBrush(
+                        BG_COLOR
+                    );
+                return (LRESULT)messageBrush;
+            }
+            SetTextColor(
+                hdc,
+                WHITE_COLOR
+            );
+            SetBkColor(
+                hdc,
+                BG_COLOR
+            );
+            static HBRUSH labelBrush =
+                CreateSolidBrush(
+                    BG_COLOR
+                );
+            return (LRESULT)labelBrush;
+        }
+        case WM_CTLCOLOREDIT: {
+            HDC hdc =
+                (HDC)wp;
+            SetTextColor(
+                hdc,
+                DARK_TEXT
+            );
+            SetBkColor(
+                hdc,
+                INPUT_COLOR
+            );
+            static HBRUSH editBrush =
+                CreateSolidBrush(
+                    INPUT_COLOR
+                );
+            return (LRESULT)editBrush;
+        }
+        case WM_CTLCOLORLISTBOX: {
+            HDC hdc =
+                (HDC)wp;
+            SetTextColor(
+                hdc,
+                DARK_TEXT
+            );
+            SetBkColor(
+                hdc,
+                INPUT_COLOR
+            );
+            static HBRUSH listBrush =
+                CreateSolidBrush(
+                    INPUT_COLOR
+                );
+            return (LRESULT)listBrush;
+        }
+        case WM_CTLCOLORBTN: {
+            HDC hdc =
+                (HDC)wp;
+            HWND button =
+                (HWND)lp;
+            SetTextColor(
+                hdc,
+                WHITE_COLOR
+            );
+            SetBkMode(
+                hdc,
+                OPAQUE
+            );
+            if (GetDlgCtrlID(button) == 100) {
+                SetBkColor(
+                    hdc,
+                    GREEN_COLOR
+                );
+                static HBRUSH addBrush =
+                    CreateSolidBrush(
+                        GREEN_COLOR
+                    );
+                return (LRESULT)addBrush;
+            }
+            if (GetDlgCtrlID(button) == 101) {
+                SetBkColor(
+                    hdc,
+                    BLUE_COLOR
+                );
+
+                static HBRUSH checkoutBrush =
+                    CreateSolidBrush(
+                        BLUE_COLOR
+                    );
+
+                return (LRESULT)checkoutBrush;
+            }
+            if (GetDlgCtrlID(button) == 102) {
+                SetBkColor(
+                    hdc,
+                    RED_COLOR
+                );
+                static HBRUSH clearBrush =
+                    CreateSolidBrush(
+                        RED_COLOR
+                    );
+                return (LRESULT)clearBrush;
+            }
+            if (GetDlgCtrlID(button) == 103) {
+                SetBkColor(
+                    hdc,
+                    PINK_COLOR
+                );
+                static HBRUSH removeBrush =
+                    CreateSolidBrush(
+                        PINK_COLOR
+                    );
+                return (LRESULT)removeBrush;
+            }
+            return 0;
+        }
+        case WM_DESTROY:{
+            PostQuitMessage(0);
+            break;
+        }
+        default: {
+            return DefWindowProcA(
+                hwnd,
+                message,
+                wp,
+                lp
+            );
+        }
     }
     return 0;
 }
+int WINAPI WinMain(
+    HINSTANCE hInstance,
+    HINSTANCE hPrevInstance,
+    LPSTR lpCmdLine,
+    int nCmdShow
+)
+{
+    WNDCLASSA wc = {};
+    wc.hInstance =
+        hInstance;
 
-int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int nCmdShow) {
-    WNDCLASS wc = {0};
-    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hInstance = hInst;
-    wc.lpszClassName = "SupermarketAppOOP";
-    wc.lpfnWndProc = WindowProcedure;
-
-    RegisterClass(&wc);
-    CreateWindow("SupermarketAppOOP", "Supermarket Weshweshny (C++ OOP GUI)", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 200, 150, 580, 430, NULL, NULL, hInst, NULL);
-
-    MSG msg = {0};
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    wc.lpfnWndProc =
+        WindowProcedure;
+    wc.lpszClassName =
+        "SupermarketGUI";
+    wc.hCursor =
+        LoadCursor(
+            NULL,
+            IDC_ARROW
+        );
+    wc.hbrBackground =
+        CreateSolidBrush(
+            BG_COLOR
+        );
+    RegisterClassA(
+        &wc
+    );
+    HWND hwnd =
+        CreateWindowA(
+            "SupermarketGUI",
+            "Supermarket Weshweshny",
+            WS_OVERLAPPED |
+            WS_CAPTION |
+            WS_SYSMENU |
+            WS_MINIMIZEBOX,
+            100,
+            50,
+            820,
+            780,
+            NULL,
+            NULL,
+            hInstance,
+            NULL
+        );
+    if (hwnd == NULL) {
+        return 0;
+    }
+    ShowWindow(
+        hwnd,
+        nCmdShow
+    );
+    UpdateWindow(
+        hwnd
+    );
+    MSG msg;
+    while (
+        GetMessageA(
+            &msg,
+            NULL,
+            0,
+            0
+        )
+    )
+    {
+        TranslateMessage(
+            &msg
+        );
+        DispatchMessageA(
+            &msg
+        );
     }
     return 0;
 }
